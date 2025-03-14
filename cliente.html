@@ -1,5 +1,6 @@
 <!DOCTYPE html>  <html lang="es">  
-<head>  
+<head> 
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil:opsz,wght@10..72,100..900&family=VT323&display=swap" rel="stylesheet">
   <meta charset="UTF-8">  
   <meta name="viewport" content="width=device-width, initial-scale=1">  
   <title>Pedidos - Cliente</title>  
@@ -35,8 +36,9 @@
     }  
     /* Botón de menú en el lado derecho */  
     #menu-toggle {  
+      font-family:'VT323';
       position: fixed;  
-      top: 45px;  
+      top: 20px;  
       
       right: 20px;  
       background: #fff;  
@@ -107,13 +109,16 @@
       width: 18%;  
       padding: 8px;  
     }  
+    h2{
+      font-family:'VT323';
+    }
   </style>  
 </head>  
 <body>  
   <!-- Botón de menú en el lado derecho -->  
   <button id="menu-toggle"> Menú de pedidos</button>    <!-- Sidebar con el formulario de Pedido -->    <div id="sidebar">  
     <form id="order-form">  
-      <h2>Crear Pedido</h2>  
+      <h2>‎ ‎ ‎‎ ‎ ‎ ‎‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ Crear Pedido</h2>  
       <input type="text" id="order-address" placeholder="Dirección" required>  
       <textarea id="order-details" placeholder="Detalles del pedido" required></textarea>  
       <textarea id="order-extra" placeholder="Información extra" required></textarea>  
