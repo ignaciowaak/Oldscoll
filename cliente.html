@@ -18,9 +18,10 @@
     }  
     /* Sidebar (formulario de pedido) totalmente oculto hasta activarse */  
     #sidebar {  
+      border-radius: 30px;
       position: fixed;  
       top: 0;  
-      left: -300px; /* Fuera de pantalla */  
+      left: -400px; /* Fuera de pantalla */  
       width: 300px;  
       height: 100%;  
       background: #f7f7f7;  
@@ -35,11 +36,12 @@
     /* Botón de menú en el lado derecho */  
     #menu-toggle {  
       position: fixed;  
-      top: 10px;  
-      right: 10px;  
+      top: 45px;  
+      
+      right: 20px;  
       background: #fff;  
-      border: none;  
-      padding: 10px;  
+      border-radius: 10px; 
+      padding: 13px;  
       cursor: pointer;  
       z-index: 1100;  
     }  
@@ -109,7 +111,7 @@
 </head>  
 <body>  
   <!-- Botón de menú en el lado derecho -->  
-  <button id="menu-toggle">☰ Menú</button>    <!-- Sidebar con el formulario de Pedido -->    <div id="sidebar">  
+  <button id="menu-toggle"> Menú de pedidos</button>    <!-- Sidebar con el formulario de Pedido -->    <div id="sidebar">  
     <form id="order-form">  
       <h2>Crear Pedido</h2>  
       <input type="text" id="order-address" placeholder="Dirección" required>  
