@@ -1,0 +1,341 @@
+<!DOCTYPE html>  <html lang="es">  
+<head>  
+  <meta charset="UTF-8">  
+  <meta name="viewport" content="width=device-width, initial-scale=1">  
+  <title>Delivery - Hacer Viaje</title>  
+  <!-- Leaflet CSS -->  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />  
+  <style>  
+    html, body {  
+      margin: 0;  
+      padding: 0;  
+      height: 100%;  
+      font-family: Arial, sans-serif;  
+    }  
+    #map {  
+      height: 100%;  
+      width: 100%;  
+    }  
+    /* Sección de login/registro para Delivery */  
+    #delivery-login {  
+      position: absolute;  
+      top: 10px;  
+      left: 10px;  
+      background: #fff;  
+      padding: 10px;  
+      z-index: 1100;  
+      border: 1px solid #ccc;  
+    }  
+    #delivery-login input, #delivery-login button, #delivery-login select {  
+      width: 100%;  
+      margin-bottom: 5px;  
+      padding: 8px;  
+      box-sizing: border-box;  
+    }  
+    /* Chat: barra fija en la parte inferior */  
+    #chat-container {  
+      position: fixed;  
+      bottom: 0;  
+      left: 0;  
+      width: 100%;  
+      background: rgba(255,255,255,0.95);  
+      border-top: 1px solid #ccc;  
+      padding: 10px;  
+      display: none;  
+      z-index: 1200;  
+    }  
+    #chat-messages {  
+      max-height: 150px;  
+      overflow-y: auto;  
+      margin-bottom: 5px;  
+      border: 1px solid #ccc;  
+      padding: 5px;  
+      background: #f9f9f9;  
+    }  
+    #chat-input {  
+      width: 80%;  
+      padding: 8px;  
+      box-sizing: border-box;  
+    }  
+    #chat-send-btn {  
+      width: 18%;  
+      padding: 8px;  
+    }  
+  </style>  
+</head>  
+<body>  
+  <!-- Sección de login/registro para Delivery -->  
+  <div id="delivery-login">  
+    <h2>Delivery - Hacer Viaje</h2>  
+    <input type="text" id="delivery-dni-login" placeholder="Ingrese su DNI" required>  
+    <button id="delivery-login-btn">Hacer viaje</button>  
+    <div id="delivery-register-section" style="display:none;">  
+      <p>DNI no registrado. Regístrese:</p>  
+      <form id="delivery-register-form">  
+        <input type="text" id="delivery-dni-register" placeholder="DNI" required>  
+        <!-- Input para cargar la foto desde el dispositivo -->  
+        <input type="file" id="delivery-photo-file" accept="image/*" required>  
+        <select id="delivery-vehicle-register" required>  
+          <option value="" disabled selected>Medio de transporte</option>  
+          <option value="bici">Bicicleta</option>  
+          <option value="moto">Moto</option>  
+          <option value="auto">Auto</option>  
+        </select>  
+        <button type="submit">Registrarse</button>  
+      </form>  
+    </div>  
+  </div>    <!-- Contenedor del mapa -->    <div id="map"></div>    <!-- Chat: panel de mensajería para el delivery -->    <div id="chat-container">  
+    <div id="chat-messages"></div>  
+    <input id="chat-input" type="text" placeholder="Escribe un mensaje...">  
+    <button id="chat-send-btn">Enviar</button>  
+  </div>    <!-- Leaflet JS -->    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>    <!-- Firebase App, Realtime Database y Storage (versión modular) -->    <script type="module">  
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";  
+    import { getDatabase, ref, onChildAdded, onChildChanged, update, set, get, remove, push } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";  
+    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-storage.js";  
+      
+    // Configuración de Firebase (misma que en el cliente)  
+    const firebaseConfig = {  
+      apiKey: "AIzaSyA_USvfSXAqZf7hQhJCon0WulnrrINB7cI",  
+      authDomain: "the-pic-c437e.firebaseapp.com",  
+      databaseURL: "https://the-pic-c437e-default-rtdb.firebaseio.com",  
+      projectId: "the-pic-c437e",  
+      storageBucket: "the-pic-c437e.appspot.com",  
+      messagingSenderId: "750954597180",  
+      appId: "1:750954597180:web:d7b67c6b60f4d3bb17ec39"  
+    };  
+    const app = initializeApp(firebaseConfig);  
+    const database = getDatabase(app);  
+    const storage = getStorage(app);  
+      
+    let currentDeliveryPerson = null;  
+    let currentAcceptedOrderId = null; // Pedido asignado a este delivery  
+    const markers = {};  
+    let chatListener = null;  
+      
+    // Inicializar el mapa centrado en Gualeguaychú  
+    const map = L.map('map').setView([-33.0091, -58.5172], 13);  
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {  
+      attribution: '&copy; OpenStreetMap contributors'  
+    }).addTo(map);  
+      
+    const blueIcon = L.icon({  
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',  
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',  
+      iconSize: [25, 41],  
+      iconAnchor: [12, 41],  
+      popupAnchor: [1, -34],  
+      shadowSize: [41, 41]  
+    });  
+      
+    // --- Sección de login/registro para Delivery ---  
+    document.getElementById("delivery-login-btn").addEventListener("click", () => {  
+      const dni = document.getElementById("delivery-dni-login").value.trim();  
+      if(dni === ""){  
+        alert("Ingrese su DNI");  
+        return;  
+      }  
+      const deliveryRef = ref(database, "deliveries/" + dni);  
+      get(deliveryRef).then((snapshot) => {  
+        if(snapshot.exists()){  
+          currentDeliveryPerson = snapshot.val();  
+          alert("Bienvenido, " + currentDeliveryPerson.dni);  
+          document.getElementById("delivery-login").style.display = "none";  
+        } else {  
+          document.getElementById("delivery-register-section").style.display = "block";  
+        }  
+      }).catch((error) => {  
+        console.error("Error al consultar el delivery:", error);  
+      });  
+    });  
+      
+    document.getElementById("delivery-register-form").addEventListener("submit", async e => {  
+      e.preventDefault();  
+      const dni = document.getElementById("delivery-dni-register").value.trim();  
+      const vehicle = document.getElementById("delivery-vehicle-register").value;  
+      const fileInput = document.getElementById("delivery-photo-file");  
+      if(dni === "" || vehicle === "" || fileInput.files.length === 0){  
+        alert("Complete todos los campos");  
+        return;  
+      }  
+      const file = fileInput.files[0];  
+      const storageReference = storageRef(storage, "deliveries/" + dni + "/" + file.name);  
+      try {  
+        const snapshot = await uploadBytes(storageReference, file);  
+        const downloadURL = await getDownloadURL(snapshot.ref);  
+        const deliveryData = { dni, photo: downloadURL, vehicle };  
+        set(ref(database, "deliveries/" + dni), deliveryData)  
+          .then(() => {  
+            currentDeliveryPerson = deliveryData;  
+            alert("Registrado exitosamente.");  
+            document.getElementById("delivery-login").style.display = "none";  
+          })  
+          .catch(error => {  
+            console.error("Error al registrar:", error);  
+          });  
+      } catch(error) {  
+        console.error("Error al subir la foto:", error);  
+      }  
+    });  
+    // ----------------------------------------------------  
+      
+    // Función para crear el contenido del popup de cada pedido  
+    function createOrderPopup(orderId, orderData) {  
+      let content = `<b>Pedido:</b><br>  
+                     <strong>Dirección:</strong> ${orderData.address}<br>  
+                     <strong>Detalles:</strong> ${orderData.details}<br>  
+                     <strong>Extra:</strong> ${orderData.extra}<br>  
+                     <strong>Tamaño:</strong> ${orderData.size}<br>  
+                     <strong>Estado:</strong> ${orderData.status}<br>`;  
+      if(orderData.status === "pending" && !currentAcceptedOrderId){  
+        content += `<button onclick="handleAccept('${orderId}')">Aceptar Pedido</button>`;  
+      }  
+      if(orderData.status === "accepted" && orderData.delivery){  
+        content += `<br><em>Delivery: DNI ${orderData.delivery.dni}<br>  
+                    Vehículo: ${orderData.delivery.vehicle}<br>  
+                    <img src="${orderData.delivery.photo}" alt="Foto" width="50"><br>  
+                    ETA: ${orderData.eta} min</em>`;  
+      }  
+      // Agregar botón para abrir el chat si este pedido es el asignado a este delivery  
+      if(orderId === currentAcceptedOrderId && orderData.status === "accepted"){  
+        content += `<br><button onclick="toggleChat()">Chat</button>`;  
+      }  
+      return content;  
+    }  
+      
+    // Escuchar nuevos pedidos y agregarlos al mapa  
+    onChildAdded(ref(database, "orders/"), snapshot => {  
+      const orderData = snapshot.val();  
+      const orderId = snapshot.key;  
+      // Si ya se asignó un pedido a este delivery, solo se muestra ese  
+      if(currentAcceptedOrderId && orderId !== currentAcceptedOrderId) return;  
+      const marker = L.marker([orderData.lat, orderData.lng], { icon: blueIcon }).addTo(map);  
+      marker.bindPopup(createOrderPopup(orderId, orderData));  
+      markers[orderId] = marker;  
+    });  
+      
+    // Actualizar el popup o eliminar el marcador cuando cambia el estado del pedido  
+    onChildChanged(ref(database, "orders/"), snapshot => {  
+      const orderData = snapshot.val();  
+      const orderId = snapshot.key;  
+      if(orderData.status === "completed"){  
+        if(markers[orderId]){  
+          map.removeLayer(markers[orderId]);  
+          delete markers[orderId];  
+        }  
+        if(orderId === currentAcceptedOrderId){  
+          currentAcceptedOrderId = null;  
+          hideChat();  
+        }  
+      } else if(markers[orderId]){  
+        markers[orderId].setPopupContent(createOrderPopup(orderId, orderData));  
+        // Si este pedido fue asignado a este delivery y ahora está aceptado, mostrar el chat  
+        if(orderId === currentAcceptedOrderId && orderData.status === "accepted"){  
+          showChat(orderId);  
+        }  
+      }  
+    });  
+      
+    // Función para manejar la aceptación de un pedido  
+    window.handleAccept = function(orderId) {  
+      if(!currentDeliveryPerson){  
+        alert("Debe ingresar su DNI y registrarse para aceptar pedidos.");  
+        return;  
+      }  
+      acceptOrder(orderId);  
+    };  
+      
+    function acceptOrder(orderId) {  
+      if(currentAcceptedOrderId) {  
+        alert("Ya tiene un pedido asignado.");  
+        return;  
+      }  
+      let eta;  
+      if(currentDeliveryPerson.vehicle === "bici"){  
+        eta = 15;  
+      } else if(currentDeliveryPerson.vehicle === "moto"){  
+        eta = 10;  
+      } else if(currentDeliveryPerson.vehicle === "auto"){  
+        eta = 5;  
+      } else {  
+        eta = 20;  
+      }  
+      update(ref(database, "orders/" + orderId), {  
+        status: "accepted",  
+        delivery: currentDeliveryPerson,  
+        eta: eta  
+      }).then(() => {  
+        alert("Pedido aceptado.");  
+        currentAcceptedOrderId = orderId;  
+        // Eliminar otros marcadores para que sólo se muestre el pedido asignado  
+        for(let key in markers){  
+          if(key !== orderId){  
+            map.removeLayer(markers[key]);  
+            delete markers[key];  
+          }  
+        }  
+        showChat(orderId);  
+      }).catch(error => {  
+        console.error("Error al aceptar pedido:", error);  
+      });  
+    }  
+      
+    // --- Chat ---  
+    const chatContainer = document.getElementById("chat-container");  
+    const chatMessages = document.getElementById("chat-messages");  
+    const chatInput = document.getElementById("chat-input");  
+    const chatSendBtn = document.getElementById("chat-send-btn");  
+    let chatOrderId = null; // Pedido en el que se está chateando  
+      
+    function showChat(orderId) {  
+      chatOrderId = orderId;  
+      chatContainer.style.display = "block";  
+      chatMessages.innerHTML = "";  
+      const messagesRef = ref(database, "orders/" + orderId + "/messages");  
+      if(chatListener) chatListener();  
+      chatListener = onChildAdded(messagesRef, snapshot => {  
+        const msg = snapshot.val();  
+        const msgElem = document.createElement("div");  
+        msgElem.textContent = msg.sender + ": " + msg.text;  
+        chatMessages.appendChild(msgElem);  
+        chatMessages.scrollTop = chatMessages.scrollHeight;  
+      });  
+    }  
+      
+    function hideChat() {  
+      chatContainer.style.display = "none";  
+      chatMessages.innerHTML = "";  
+      chatOrderId = null;  
+      if(chatListener) chatListener();  
+      chatListener = null;  
+    }  
+      
+    // Alternar visibilidad del chat  
+    window.toggleChat = function() {  
+      if(chatContainer.style.display === "none"){  
+        if(currentAcceptedOrderId) showChat(currentAcceptedOrderId);  
+      } else {  
+        hideChat();  
+      }  
+    };  
+      
+    chatSendBtn.addEventListener("click", sendMessage);  
+    chatInput.addEventListener("keypress", e => {  
+      if(e.key === "Enter") sendMessage();  
+    });  
+      
+    function sendMessage() {  
+      const text = chatInput.value.trim();  
+      if(text === "" || !chatOrderId) return;  
+      const message = {  
+        sender: "delivery (" + currentDeliveryPerson.dni + ")",  
+        text: text,  
+        timestamp: Date.now()  
+      };  
+      push(ref(database, "orders/" + chatOrderId + "/messages"), message)  
+      .then(() => {  
+        chatInput.value = "";  
+      })  
+      .catch(err => console.error("Error al enviar mensaje:", err));  
+    }  
+  </script>  </body>  
+</html>.

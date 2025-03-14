@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil:opsz,wght@10..72,100..900&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Página Retro Minimalista</title>
+  <style>
+    /* Fondo vintage fijado manualmente */
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #292929; /* Cambia este color por el que desees */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Big Shoulders Stencil', Helvetica, Arial, sans-serif;
+      text-align: center;
+      animation: fadeIn 1s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    /* Contenedor del logo con animación de entrada */
+    .logo {
+      margin-bottom: 40px;
+      animation: scaleIn 0.8s ease-out;
+    }
+    .logo img {
+      max-width: 200px;
+      width: 100%;
+      height: auto;
+    }
+    @keyframes scaleIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    
+    /* Contenedor de botones */
+    .buttons {
+      display: flex;
+      gap: 20px;
+    }
+    
+    /* Estilo de botón: retro, minimalista y con toques iOS */
+    .btn {
+      position: relative;
+      background-color: transparent;  /* Color primario, modifícalo a tu gusto */
+      color: white;
+      border: none;
+      font-family: 'Big Shoulders Stencil';
+      border-radius: 25px;
+      padding: 90px 90px;
+      font-size: 190px;
+      cursor: pointer;
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      text-transform: uppercase;
+    }
+    .btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+    }
+    .btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 3px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Efecto ripple en el click */
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.7);
+      transform: scale(0);
+      animation: ripple 0.6s linear;
+    }
+    @keyframes ripple {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+    
+    /* Responsive: ajustes para pantallas pequeñas */
+    @media (max-width: 600px) {
+      .logo img {
+        max-width: 150px;
+      }
+      .buttons {
+        flex-direction: column;
+        gap: 10px;
+      }
+      .btn {
+        padding: 12px 25px;
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Logo centrado: actualiza el atributo src con la ruta de tu imagen -->
+  <div class="logo">
+    <img src="logo/0.png" alt="Logo">
+  </div>
+  
+  <!-- Botones redondeados que redirigen a otros HTML -->
+  <div class="buttons">
+    <button class="btn" onclick="redirectTo('cliente.html')">Pedir delivery</button>
+    <button class="btn" onclick="redirectTo('delivery.html')">Hacer Delivery</button>
+  </div>
+  
+  <script>
+    // Función para redirigir a la URL indicada
+    function redirectTo(url) {
+      window.location.href = url;
+    }
+    
+    // Efecto Ripple en cada botón al hacer click
+    document.querySelectorAll('.btn').forEach(button => {
+      button.addEventListener('click', function(e) {
+        // Remover cualquier ripple anterior
+        const existingRipple = this.querySelector('.ripple');
+        if (existingRipple) {
+          existingRipple.remove();
+        }
+        // Crear el span para el efecto ripple
+        const ripple = document.createElement("span");
+        const rect = this.getBoundingClientRect();
+        const diameter = Math.max(rect.width, rect.height);
+        const radius = diameter / 2;
+        ripple.style.width = ripple.style.height = diameter + 'px';
+        ripple.style.left = e.clientX - rect.left - radius + 'px';
+        ripple.style.top = e.clientY - rect.top - radius + 'px';
+        ripple.classList.add("ripple");
+        this.appendChild(ripple);
+        
+        // Eliminar el ripple al finalizar la animación
+        ripple.addEventListener('animationend', () => {
+          ripple.remove();
+        });
+      });
+    });
+  </script>
+</body>
+</html>

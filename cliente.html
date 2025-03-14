@@ -1,0 +1,421 @@
+<!DOCTYPE html>  <html lang="es">  
+<head>  
+  <meta charset="UTF-8">  
+  <meta name="viewport" content="width=device-width, initial-scale=1">  
+  <title>Pedidos - Cliente</title>  
+  <!-- Leaflet CSS -->  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />  
+  <style>  
+    html, body {  
+      margin: 0;  
+      padding: 0;  
+      height: 100%;  
+      font-family: Arial, sans-serif;  
+    }  
+    #map {  
+      height: 100%;  
+      width: 100%;  
+    }  
+    /* Sidebar (formulario de pedido) totalmente oculto hasta activarse */  
+    #sidebar {  
+      position: fixed;  
+      top: 0;  
+      left: -300px; /* Fuera de pantalla */  
+      width: 300px;  
+      height: 100%;  
+      background: #f7f7f7;  
+      overflow-y: auto;  
+      padding: 20px;  
+      transition: left 0.3s ease;  
+      z-index: 1000;  
+    }  
+    #sidebar.active {  
+      left: 0;  
+    }  
+    /* Botón de menú en el lado derecho */  
+    #menu-toggle {  
+      position: fixed;  
+      top: 10px;  
+      right: 10px;  
+      background: #fff;  
+      border: none;  
+      padding: 10px;  
+      cursor: pointer;  
+      z-index: 1100;  
+    }  
+    form input, form textarea, form select, form button {  
+      width: 100%;  
+      margin-bottom: 10px;  
+      padding: 8px;  
+      box-sizing: border-box;  
+    }  
+    /* Modal para registro de cliente (solo DNI) */  
+    #client-modal {  
+      display: none;  
+      position: fixed;  
+      top: 0;  
+      left: 0;  
+      width: 100%;  
+      height: 100%;  
+      background: rgba(0,0,0,0.5);  
+      z-index: 1500;  
+      align-items: center;  
+      justify-content: center;  
+    }  
+    #client-modal .modal-content {  
+      background: #fff;  
+      padding: 20px;  
+      width: 300px;  
+      border-radius: 8px;  
+      position: relative;  
+    }  
+    #client-modal #client-modal-close {  
+      position: absolute;  
+      top: 5px;  
+      right: 10px;  
+      cursor: pointer;  
+      font-size: 20px;  
+    }  
+    /* Chat: barra fija en la parte inferior */  
+    #chat-container {  
+      position: fixed;  
+      bottom: 0;  
+      left: 0;  
+      width: 100%;  
+      background: rgba(255,255,255,0.95);  
+      border-top: 1px solid #ccc;  
+      padding: 10px;  
+      display: none;  
+      z-index: 1200;  
+    }  
+    #chat-messages {  
+      max-height: 150px;  
+      overflow-y: auto;  
+      margin-bottom: 5px;  
+      border: 1px solid #ccc;  
+      padding: 5px;  
+      background: #f9f9f9;  
+    }  
+    #chat-input {  
+      width: 80%;  
+      padding: 8px;  
+      box-sizing: border-box;  
+    }  
+    #chat-send-btn {  
+      width: 18%;  
+      padding: 8px;  
+    }  
+  </style>  
+</head>  
+<body>  
+  <!-- Botón de menú en el lado derecho -->  
+  <button id="menu-toggle">☰ Menú</button>    <!-- Sidebar con el formulario de Pedido -->    <div id="sidebar">  
+    <form id="order-form">  
+      <h2>Crear Pedido</h2>  
+      <input type="text" id="order-address" placeholder="Dirección" required>  
+      <textarea id="order-details" placeholder="Detalles del pedido" required></textarea>  
+      <textarea id="order-extra" placeholder="Información extra" required></textarea>  
+      <select id="order-size" required>  
+        <option value="" disabled selected>Tamaño del pedido</option>  
+        <option value="chico">Chico</option>  
+        <option value="mediano">Mediano</option>  
+        <option value="grande">Grande</option>  
+      </select>  
+      <!-- Campos ocultos para latitud y longitud -->  
+      <input type="hidden" id="order-lat">  
+      <input type="hidden" id="order-lng">  
+      <button type="button" id="get-location">Usar mi ubicación</button>  
+      <!-- Campo para DNI del cliente -->  
+      <input type="text" id="client-dni" placeholder="Ingrese su DNI" required>  
+      <button type="submit">Enviar Pedido</button>  
+    </form>  
+  </div>    <!-- Modal para registro de cliente (solo DNI) -->    <div id="client-modal">  
+    <div class="modal-content">  
+      <span id="client-modal-close">&times;</span>  
+      <h2>Registro Cliente</h2>  
+      <form id="client-register-form">  
+        <!-- El DNI se prellena desde el formulario de pedido -->  
+        <input type="text" id="client-dni-reg" placeholder="DNI" required>  
+        <button type="submit">Registrarse</button>  
+      </form>  
+    </div>  
+  </div>    <!-- Contenedor del mapa -->    <div id="map"></div>    <!-- Chat: panel de mensajería (se muestra cuando hay pedido aceptado) -->    <div id="chat-container">  
+    <div id="chat-messages"></div>  
+    <input id="chat-input" type="text" placeholder="Escribe un mensaje...">  
+    <button id="chat-send-btn">Enviar</button>  
+  </div>    <!-- Leaflet JS -->    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>    <!-- Firebase App, Realtime Database y funciones para eliminación (versión modular) -->    <script type="module">  
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";  
+    import { getDatabase, ref, push, onChildAdded, onChildChanged, onChildRemoved, update, get, set, remove } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";  
+      
+    // Configuración de Firebase (ajusta según tu proyecto)  
+    const firebaseConfig = {  
+      apiKey: "AIzaSyA_USvfSXAqZf7hQhJCon0WulnrrINB7cI",  
+      authDomain: "the-pic-c437e.firebaseapp.com",  
+      databaseURL: "https://the-pic-c437e-default-rtdb.firebaseio.com",  
+      projectId: "the-pic-c437e",  
+      storageBucket: "the-pic-c437e.appspot.com",  
+      messagingSenderId: "750954597180",  
+      appId: "1:750954597180:web:d7b67c6b60f4d3bb17ec39"  
+    };  
+    const app = initializeApp(firebaseConfig);  
+    const database = getDatabase(app);  
+      
+    // Variables globales  
+    let currentOrderId = null;  // Pedido realizado desde este dispositivo  
+    let currentClient = null;   // Datos del cliente (solo DNI)  
+    const markers = {};         // Marcadores activos  
+      
+    // Referencia global al chat (para el pedido actual)  
+    let chatListener = null;  
+      
+    // Inicializar el mapa centrado en Gualeguaychú  
+    const map = L.map('map').setView([-33.0091, -58.5172], 13);  
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {  
+      attribution: '&copy; OpenStreetMap contributors'  
+    }).addTo(map);  
+      
+    // Ícono azul para los pedidos  
+    const blueIcon = L.icon({  
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',  
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',  
+      iconSize: [25, 41],  
+      iconAnchor: [12, 41],  
+      popupAnchor: [1, -34],  
+      shadowSize: [41, 41]  
+    });  
+      
+    // Mostrar/ocultar el sidebar al pulsar el botón de menú  
+    document.getElementById("menu-toggle").addEventListener("click", () => {  
+      document.getElementById("sidebar").classList.toggle("active");  
+    });  
+      
+    // Obtener ubicación actual  
+    document.getElementById("get-location").addEventListener("click", () => {  
+      if(navigator.geolocation){  
+        navigator.geolocation.getCurrentPosition(position => {  
+          document.getElementById("order-lat").value = position.coords.latitude;  
+          document.getElementById("order-lng").value = position.coords.longitude;  
+          alert("Ubicación obtenida");  
+        }, error => {  
+          alert("Error al obtener ubicación: " + error.message);  
+        });  
+      } else {  
+        alert("Geolocalización no soportada.");  
+      }  
+    });  
+      
+    // Cerrar el modal de registro de cliente  
+    document.getElementById("client-modal-close").addEventListener("click", () => {  
+      document.getElementById("client-modal").style.display = "none";  
+    });  
+      
+    // Al enviar el formulario de pedido, se verifica si el cliente está registrado  
+    document.getElementById("order-form").addEventListener("submit", async e => {  
+      e.preventDefault();  
+      const address = document.getElementById("order-address").value;  
+      const details = document.getElementById("order-details").value;  
+      const extra = document.getElementById("order-extra").value;  
+      const size = document.getElementById("order-size").value;  
+      const lat = parseFloat(document.getElementById("order-lat").value);  
+      const lng = parseFloat(document.getElementById("order-lng").value);  
+      const dni = document.getElementById("client-dni").value.trim();  
+        
+      if(isNaN(lat) || isNaN(lng)){  
+        alert("Debes obtener tu ubicación.");  
+        return;  
+      }  
+      if(dni === ""){  
+        alert("Ingresa tu DNI.");  
+        return;  
+      }  
+        
+      // Verificar si el cliente ya está registrado  
+      const clientRef = ref(database, "clients/" + dni);  
+      const snapshot = await get(clientRef);  
+      if(snapshot.exists()){  
+        currentClient = snapshot.val();  
+      } else {  
+        // Si no está registrado, abrir el modal para registrarse  
+        document.getElementById("client-dni-reg").value = dni;  
+        document.getElementById("client-modal").style.display = "flex";  
+        return; // No se envía el pedido hasta registrarse  
+      }  
+        
+      // Si está registrado, incluir la información del cliente en el pedido  
+      const order = {  
+        address,  
+        details,  
+        extra,  
+        size,  
+        lat,  
+        lng,  
+        status: "pending",  
+        timestamp: Date.now(),  
+        client: { dni: currentClient.dni }  
+      };  
+        
+      const orderRef = push(ref(database, "orders/"), order);  
+      currentOrderId = orderRef.key;  
+      alert("Pedido enviado");  
+      document.getElementById("order-form").reset();  
+      document.getElementById("sidebar").classList.remove("active");  
+    });  
+      
+    // Registro de cliente (solo DNI)  
+    document.getElementById("client-register-form").addEventListener("submit", e => {  
+      e.preventDefault();  
+      const dni = document.getElementById("client-dni-reg").value.trim();  
+      if(dni === ""){  
+        alert("Ingresa un DNI.");  
+        return;  
+      }  
+      set(ref(database, "clients/" + dni), { dni })  
+        .then(() => {  
+          currentClient = { dni };  
+          alert("Registrado exitosamente. Ahora puedes enviar tu pedido.");  
+          document.getElementById("client-modal").style.display = "none";  
+        })  
+        .catch(error => {  
+          console.error("Error al registrar cliente:", error);  
+        });  
+    });  
+      
+    // Función para crear el contenido del popup de cada pedido  
+    function createOrderPopup(orderId, orderData) {  
+      let content = `<b>Pedido:</b><br>  
+                     <strong>Dirección:</strong> ${orderData.address}<br>  
+                     <strong>Detalles:</strong> ${orderData.details}<br>  
+                     <strong>Extra:</strong> ${orderData.extra}<br>  
+                     <strong>Tamaño:</strong> ${orderData.size}<br>  
+                     <strong>Estado:</strong> ${orderData.status}<br>`;  
+      if(orderData.status === "accepted" && orderData.delivery){  
+        content += `<br><em>Delivery: DNI ${orderData.delivery.dni}<br>  
+                    Vehículo: ${orderData.delivery.vehicle}<br>  
+                    <img src="${orderData.delivery.photo}" alt="Foto Delivery" width="50"></em>`;  
+        // Si este pedido es el realizado por este cliente, se muestra el botón para finalizar y abrir el chat  
+        if(orderId === currentOrderId){  
+          content += `<br><button onclick="finalizeOrder('${orderId}')">Finalizar Viaje</button>  
+                      <br><button onclick="toggleChat()">Chat</button>`;  
+        }  
+      }  
+      return content;  
+    }  
+      
+    // Escuchar nuevos pedidos y agregarlos al mapa  
+    onChildAdded(ref(database, "orders/"), snapshot => {  
+      const orderData = snapshot.val();  
+      const orderId = snapshot.key;  
+      const marker = L.marker([orderData.lat, orderData.lng], { icon: blueIcon }).addTo(map);  
+      marker.bindPopup(createOrderPopup(orderId, orderData));  
+      markers[orderId] = marker;  
+    });  
+      
+    // Actualizar el popup o eliminar el marcador cuando cambia el estado del pedido  
+    onChildChanged(ref(database, "orders/"), snapshot => {  
+      const orderData = snapshot.val();  
+      const orderId = snapshot.key;  
+      if(orderData.status === "completed"){  
+        if(markers[orderId]){  
+          map.removeLayer(markers[orderId]);  
+          delete markers[orderId];  
+        }  
+        if(orderId === currentOrderId) {  
+          currentOrderId = null;  
+          hideChat();  
+        }  
+      } else if(markers[orderId]){  
+        markers[orderId].setPopupContent(createOrderPopup(orderId, orderData));  
+        if(orderId === currentOrderId && orderData.status === "accepted"){  
+          showChat(orderId);  
+        }  
+      }  
+    });  
+      
+    // Listener para cuando se elimina un pedido de Firebase (por remove())  
+    onChildRemoved(ref(database, "orders/"), snapshot => {  
+      const orderId = snapshot.key;  
+      if(markers[orderId]){  
+        map.removeLayer(markers[orderId]);  
+        delete markers[orderId];  
+      }  
+    });  
+      
+    // Función para finalizar el pedido: se elimina el pedido de Firebase y se remueve el marcador  
+    window.finalizeOrder = function(orderId) {  
+      remove(ref(database, "orders/" + orderId))  
+        .then(() => {  
+          alert("Viaje finalizado");  
+          if(markers[orderId]){  
+            map.removeLayer(markers[orderId]);  
+            delete markers[orderId];  
+          }  
+          if(orderId === currentOrderId) {  
+            currentOrderId = null;  
+            hideChat();  
+          }  
+        })  
+        .catch(err => {  
+          console.error("Error al finalizar:", err);  
+        });  
+    };  
+      
+    // --- Chat ---  
+    const chatContainer = document.getElementById("chat-container");  
+    const chatMessages = document.getElementById("chat-messages");  
+    const chatInput = document.getElementById("chat-input");  
+    const chatSendBtn = document.getElementById("chat-send-btn");  
+    let chatOrderId = null; // Pedido en el que se está chateando  
+      
+    function showChat(orderId) {  
+      chatOrderId = orderId;  
+      chatContainer.style.display = "block";  
+      chatMessages.innerHTML = "";  
+      const messagesRef = ref(database, "orders/" + orderId + "/messages");  
+      if(chatListener) chatListener();  
+      chatListener = onChildAdded(messagesRef, snapshot => {  
+        const msg = snapshot.val();  
+        const msgElem = document.createElement("div");  
+        msgElem.textContent = msg.sender + ": " + msg.text;  
+        chatMessages.appendChild(msgElem);  
+        chatMessages.scrollTop = chatMessages.scrollHeight;  
+      });  
+    }  
+      
+    function hideChat() {  
+      chatContainer.style.display = "none";  
+      chatMessages.innerHTML = "";  
+      chatOrderId = null;  
+      if(chatListener) chatListener();  
+      chatListener = null;  
+    }  
+      
+    // Alternar visibilidad del chat  
+    window.toggleChat = function() {  
+      if(chatContainer.style.display === "none"){  
+        if(currentOrderId) showChat(currentOrderId);  
+      } else {  
+        hideChat();  
+      }  
+    };  
+      
+    chatSendBtn.addEventListener("click", sendMessage);  
+    chatInput.addEventListener("keypress", e => {  
+      if(e.key === "Enter") sendMessage();  
+    });  
+      
+    function sendMessage() {  
+      const text = chatInput.value.trim();  
+      if(text === "" || !chatOrderId) return;  
+      const message = {  
+        sender: "cliente (" + currentClient.dni + ")",  
+        text: text,  
+        timestamp: Date.now()  
+      };  
+      push(ref(database, "orders/" + chatOrderId + "/messages"), message)  
+      .then(() => {  
+        chatInput.value = "";  
+      })  
+      .catch(err => console.error("Error al enviar mensaje:", err));  
+    }  
+  </script>  </body>  
+</html>
