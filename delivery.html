@@ -1,5 +1,8 @@
 <!DOCTYPE html>  <html lang="es">  
 <head>  
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil:opsz,wght@10..72,100..900&family=VT323&display=swap" rel="stylesheet">
   <meta charset="UTF-8">  
   <meta name="viewport" content="width=device-width, initial-scale=1">  
   <title>Delivery - Hacer Viaje</title>  
@@ -17,20 +20,22 @@
       width: 100%;  
     }  
     /* Sección de login/registro para Delivery */  
-    #delivery-login {  
+    #delivery-login { 
+      background: #992800;
+      font-family:'VT323';
       position: absolute;  
       top: 10px;  
       left: 10px;  
-      background: #fff;
-      border-radius: 10px;
+      border-radius: 20px;
       padding: 10px;  
       z-index: 1100;  
-      border: 1px solid #ccc;  
+      border: 3px solid black;  
     }  
-    #delivery-login input, #delivery-login button, #delivery-login select {  
+    #delivery-login input, #delivery-login button, #delivery-login select { 
+      
       width: 100%;  
-      margin-bottom: 5px;  
-      padding: 8px;  
+      margin-bottom: 10px;  
+      padding: 15px;  
       box-sizing: border-box;  
     }  
     /* Chat: barra fija en la parte inferior */  
@@ -62,13 +67,17 @@
       width: 18%;  
       padding: 8px;  
     }  
+    
+    h2{
+      color: white;
+    }
   </style>  
 </head>  
 <body>  
   <!-- Sección de login/registro para Delivery -->  
   <div id="delivery-login">  
-    <h2>Delivery - Hacer Viaje</h2>  
-    <input type="text" id="delivery-dni-login" placeholder="Ingrese su DNI" required>  
+    <h2>Ingresa tu DNI Para hacer viajes</h2>  
+    <input type="text" id="delivery-dni-login" placeholder="DNI" required>  
     <button id="delivery-login-btn">Hacer viaje</button>  
     <div id="delivery-register-section" style="display:none;">  
       <p>DNI no registrado. Regístrese:</p>  
