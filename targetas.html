@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tarjetas con Transición iOS y SVG Dinámicos</title>
+  <!-- Preload de SVGs para mejorar la carga -->
+  <link rel="preload" href="targetaslogos/1.svg" as="image">
+  <link rel="preload" href="targetaslogos/2.svg" as="image">
   <style>
     :root {
       --cards-bg: #e6e6dd; /* Fondo de la página */
@@ -19,6 +22,18 @@
       justify-content: center;
       height: 100vh;
       overflow: hidden;
+    }
+    /* Estilo para el logo de la web */
+    .site-header {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+    .site-header img {
+      max-width: 100px; /* Ajusta según tus necesidades */
+      height: auto;
     }
     /* Overlay para la transición de página (estilo iOS) */
     .transition-overlay {
@@ -186,6 +201,11 @@
   </style>
 </head>
 <body>
+  <!-- Logo de la web -->
+  <header class="site-header">
+    <img src="0.png" alt="Logo de la web">
+  </header>
+  
   <!-- Overlay para la transición de página -->
   <div class="transition-overlay" id="transitionOverlay"></div>
   
