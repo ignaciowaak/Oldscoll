@@ -6,7 +6,7 @@
   <title>Tarjetas con Transición iOS y SVG Dinámicos</title>
   <style>
     :root {
-      --cards-bg: #2b2b2b; /* Fondo de la página */
+      --cards-bg: #e6e6dd; /* Fondo de la página */
     }
     body {
       background-color: var(--cards-bg);
@@ -45,22 +45,7 @@
       filter: blur(10px);
       transform: scale(1.05);
     }
-    /* Estilos de las tarjetas */
-    .card {
-      border: 1px solid #e6e6dd;
-      margin: auto;
-      width: min(300px, 100%);
-      background-color: #2b2b2b;
-      border-radius: 1rem;
-      padding: 0.5rem;
-      color: #141417;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      transform-style: preserve-3d;
-    }
-    .card:hover {
-      transform: translateY(-10px) rotateX(5deg) rotateY(5deg);
-      box-shadow: 0 15px 25px rgba(0, 0, 0, 0.2);
-    }
+    /* ----------------- Estilos originales ----------------- */
     .card__hero {
       background-color: #e6e6dd;
       border-radius: 0.5rem 0.5rem 0 0;
@@ -166,9 +151,6 @@
     .card__job .card__job-title {
       color: #e6e6dd;
     }
-    .card__dynamic {
-  pointer-events: none;
-}
     /* Responsive: ajustes para pantallas pequeñas */
     @media (max-width: 480px) {
       .dynamic-text {
@@ -177,9 +159,29 @@
       .card__hero {
         padding: 1rem;
       }
-      .card {
-        width: 90%;
-      }
+    }
+    /* ----------------- Solución para evitar interferencia ----------------- */
+    .card__dynamic {
+      pointer-events: none;
+    }
+    /* ----------------- Nuevo efecto 3D para las tarjetas y responsividad ----------------- */
+    .card {
+      /* Usamos clamp para que la tarjeta se adapte entre un mínimo y un máximo */
+      height: clamp(280px, 55vw, 300px);
+      width: clamp(290px, 25vw, 250px);
+      background-image: linear-gradient(to top, #ff7e5f, #feb47b, #ff7e5f, #feb47b, #ff7e5f);
+      box-shadow: rgba(0, 0, 0, 0.24) -20px 30px 10px;
+      transform-style: preserve-3d;
+      transform: perspective(400px) rotateX(60deg) rotateZ(-30deg);
+      border-radius: 10px;
+      transition: transform 2s;
+    }
+    .card:hover {
+      transform: perspective(400px) rotateX(60deg) rotateZ(-30deg) rotateY(19deg);
+    }
+    /* ----------------- Estilo para la tarjeta levantada (normal) ----------------- */
+    .card.lifted {
+      transform: perspective(400px) rotateX(0deg) rotateY(0deg) rotateZ(0deg);
     }
   </style>
 </head>
@@ -258,9 +260,10 @@
   </article>
   
   <script>
-    // Evita que se invoque la transición múltiples veces
+    // Evita que se invoque la transición múltiples veces al hacer clic en el botón
     let transitionStarted = false;
     function handleTransition(event) {
+      event.stopPropagation(); // Impide que el clic se propague a la tarjeta
       if (transitionStarted) return;
       transitionStarted = true;
       const targetURL = event.currentTarget.getAttribute('data-target');
@@ -274,8 +277,7 @@
       button.addEventListener('click', handleTransition);
     });
     
-    // Alterna dinámicamente el contenido del header en cada tarjeta:
-    // Muestra el texto durante 3s, luego el SVG durante 2s, y repite.
+    // Configuración del ciclo dinámico para cambiar el contenido del header en cada tarjeta
     function setupDynamicCycle(dynamicElement, textDuration = 3000, svgDuration = 2000) {
       function cycle() {
         setTimeout(() => {
@@ -290,6 +292,22 @@
     }
     document.querySelectorAll('.card__dynamic').forEach(dynamic => {
       setupDynamicCycle(dynamic);
+    });
+    
+    // Al hacer clic en la tarjeta, se le agrega la clase "lifted" para levantarla y ponerla en posición normal.
+    document.querySelectorAll('.card').forEach(card => {
+      card.addEventListener('click', function(event) {
+        // Detenemos la propagación para que el clic no se interprete también en el documento.
+        event.stopPropagation();
+        card.classList.add('lifted');
+      });
+    });
+    
+    // Si se hace clic fuera de cualquier tarjeta, se remueve la clase "lifted" de todas.
+    document.addEventListener('click', function(event) {
+      document.querySelectorAll('.card.lifted').forEach(card => {
+        card.classList.remove('lifted');
+      });
     });
   </script>
 </body>
