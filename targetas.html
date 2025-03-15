@@ -1,14 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tarjetas con Transición iOS</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tarjetas con Transición iOS y SVG Dinámicos</title>
   <style>
     :root {
-      --cards-bg: #e6e6dd; /* Cambia este valor para modificar el fondo de la página */
+      --cards-bg: #2b2b2b; /* Fondo de la página */
     }
-    /* Contenedor centrado */
     body {
       background-color: var(--cards-bg);
       margin: 0;
@@ -21,7 +20,7 @@
       height: 100vh;
       overflow: hidden;
     }
-    /* Overlay para la transición estilo iOS */
+    /* Overlay para la transición de página (estilo iOS) */
     .transition-overlay {
       position: fixed;
       top: 0;
@@ -32,8 +31,11 @@
       filter: blur(0px);
       opacity: 0;
       transform: scale(1);
-      transition: transform 1.2s cubic-bezier(0.4, 0.0, 0.2, 1), 
-                  opacity 1.2s cubic-bezier(0.4, 0.0, 0.2, 1), 
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: transform 1.2s cubic-bezier(0.4, 0.0, 0.2, 1),
+                  opacity 1.2s cubic-bezier(0.4, 0.0, 0.2, 1),
                   filter 1.2s cubic-bezier(0.4, 0.0, 0.2, 1);
       z-index: 1000;
       pointer-events: none;
@@ -45,7 +47,7 @@
     }
     /* Estilos de las tarjetas */
     .card {
-      border: 1px solid black;
+      border: 1px solid #e6e6dd;
       margin: auto;
       width: min(300px, 100%);
       background-color: #2b2b2b;
@@ -64,12 +66,7 @@
       border-radius: 0.5rem 0.5rem 0 0;
       padding: 1.5rem;
       font-size: 0.875rem;
-    }
-    .card__hero .card__job-title {
-      margin: 2rem 0;
-      font-size: 2rem;
-      font-weight: 600;
-      padding-right: 2rem;
+      position: relative;
     }
     .card__hero-header {
       display: flex;
@@ -78,6 +75,50 @@
       flex-direction: row;
       gap: 1rem;
       font-weight: 700;
+    }
+    /* Contenedor dinámico: alterna entre texto y SVG */
+    .card__dynamic {
+      position: relative;
+      width: 100%;
+      min-height: 4em; /* Asegura espacio suficiente para el SVG completo */
+      text-align: center;
+    }
+    .card__dynamic .dynamic-text,
+    .card__dynamic .dynamic-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.6s ease, filter 0.6s ease;
+    }
+    .dynamic-text {
+      opacity: 1;
+      filter: blur(0px);
+      color: #2b2b2b;
+      font-size: 2rem;
+      font-weight: 600;
+    }
+    .dynamic-svg {
+      opacity: 0;
+      filter: blur(10px);
+    }
+    .dynamic-svg img {
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+    }
+    /* Alterna la visibilidad */
+    .card__dynamic.show-svg .dynamic-text {
+      opacity: 0;
+      filter: blur(10px);
+    }
+    .card__dynamic.show-svg .dynamic-svg {
+      opacity: 1;
+      filter: blur(0px);
     }
     .card__footer {
       display: flex;
@@ -125,10 +166,25 @@
     .card__job .card__job-title {
       color: #e6e6dd;
     }
+    .card__dynamic {
+  pointer-events: none;
+}
+    /* Responsive: ajustes para pantallas pequeñas */
+    @media (max-width: 480px) {
+      .dynamic-text {
+        font-size: 1.5rem;
+      }
+      .card__hero {
+        padding: 1rem;
+      }
+      .card {
+        width: 90%;
+      }
+    }
   </style>
 </head>
 <body>
-  <!-- Overlay de transición -->
+  <!-- Overlay para la transición de página -->
   <div class="transition-overlay" id="transitionOverlay"></div>
   
   <!-- Primera Tarjeta -->
@@ -142,25 +198,30 @@
           </svg>
         </div>
       </header>
-      <p class="card__job-title">Tus Pedidos</p>
+      <!-- Contenedor dinámico: alterna entre "Tus Pedidos" y el SVG -->
+      <div class="card__dynamic" id="dynamic1">
+        <div class="dynamic-text">Tus Pedidos</div>
+        <div class="dynamic-svg">
+          <img src="targetaslogos/1.svg" alt="SVG de Tus Pedidos">
+        </div>
+      </div>
     </section>
     <footer class="card__footer">
       <div class="card__job-summary">
         <div class="card__job-icon">
-          <img src="targetaslogos/1.svg" alt="Icono de la tarjeta 1" height="45" width="38" />
+          <img src="targetaslogos/1.svg" alt="Icono de la tarjeta 1" height="45" width="38">
         </div>
         <div class="card__job">
           <p class="card__job-title">
-            Pedi tu delivery<br />
+            Pedi tu delivery<br>
             Hasta la puerta de tu casa
           </p>
         </div>
       </div>
-      <!-- Cada botón "Quiero" tiene su atributo data-target para la redirección -->
       <button class="card__btn" data-target="cliente.html">Quiero</button>
     </footer>
   </article>
-
+  
   <!-- Segunda Tarjeta -->
   <article class="card">
     <section class="card__hero">
@@ -172,16 +233,22 @@
           </svg>
         </div>
       </header>
-      <p class="card__job-title">Hacete Delivery</p>
+      <!-- Contenedor dinámico: alterna entre "Hacete Delivery" y el SVG -->
+      <div class="card__dynamic" id="dynamic2">
+        <div class="dynamic-text">Hacete Delivery</div>
+        <div class="dynamic-svg">
+          <img src="targetaslogos/2.svg" alt="SVG de Hacete Delivery">
+        </div>
+      </div>
     </section>
     <footer class="card__footer">
       <div class="card__job-summary">
         <div class="card__job-icon">
-          <img src="targetaslogos/2.svg" alt="Icono de la tarjeta 2" height="45" width="38" />
+          <img src="targetaslogos/2.svg" alt="Icono de la tarjeta 2" height="45" width="38">
         </div>
         <div class="card__job">
           <p class="card__job-title">
-            Entrega los pedidos hechos por las personas<br />
+            Entrega los pedidos hechos por las personas<br>
             sin comisión 
           </p>
         </div>
@@ -191,20 +258,38 @@
   </article>
   
   <script>
-    // Función que maneja la transición y redirección
+    // Evita que se invoque la transición múltiples veces
+    let transitionStarted = false;
     function handleTransition(event) {
+      if (transitionStarted) return;
+      transitionStarted = true;
       const targetURL = event.currentTarget.getAttribute('data-target');
       const overlay = document.getElementById('transitionOverlay');
       overlay.classList.add('active');
-      // Esperamos 1.2 segundos (1200ms) para completar la transición
       setTimeout(() => {
         window.location.href = targetURL;
       }, 1200);
     }
-    
-    // Asignamos el evento a cada botón "Quiero"
     document.querySelectorAll('.card__btn').forEach(button => {
       button.addEventListener('click', handleTransition);
+    });
+    
+    // Alterna dinámicamente el contenido del header en cada tarjeta:
+    // Muestra el texto durante 3s, luego el SVG durante 2s, y repite.
+    function setupDynamicCycle(dynamicElement, textDuration = 3000, svgDuration = 2000) {
+      function cycle() {
+        setTimeout(() => {
+          dynamicElement.classList.add('show-svg');
+          setTimeout(() => {
+            dynamicElement.classList.remove('show-svg');
+            cycle();
+          }, svgDuration);
+        }, textDuration);
+      }
+      cycle();
+    }
+    document.querySelectorAll('.card__dynamic').forEach(dynamic => {
+      setupDynamicCycle(dynamic);
     });
   </script>
 </body>
