@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SVG con Transición Estilo Apple</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #e6e6dd;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      /* Se aplican 3 propiedades en transición, con la curva de aceleración de Apple */
+      transition: transform 1.2s cubic-bezier(0.4, 0.0, 0.2, 1), 
+                  opacity 1.2s cubic-bezier(0.4, 0.0, 0.2, 1), 
+                  filter 1.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+    }
+    .container img {
+      width: 70vw;
+      max-width: 300px;
+      height: auto;
+    }
+    /* Clase que activa la transición: escalado, desplazamiento y desenfoque sutil */
+    .transition-apple {
+      transform: scale(0.95) translateY(-20px);
+      opacity: 0;
+      filter: blur(1.5px);
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="container">
+    <img src="q.svg" alt="SVG">
+  </div>
+
+  <script>
+    // Espera 2.5 segundos para iniciar la transición inspirada en Apple
+    setTimeout(() => {
+      document.getElementById('container').classList.add('transition-apple');
+      // Luego de 1.2 segundos (duración de la transición), redirige a la página destino
+      setTimeout(() => {
+        window.location.href = "index.html"; // Reemplazar por la URL o archivo deseado
+      }, 1200);
+    }, 2500);
+  </script>
+</body>
+</html>
