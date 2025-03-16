@@ -62,6 +62,7 @@
     }
     /* ----------------- Estilos originales ----------------- */
     .card__hero {
+      margin-bottom: 3rem;
       background-color: #e6e6dd;
       border-radius: 0.5rem 0.5rem 0 0;
       padding: 1.5rem;
@@ -69,6 +70,7 @@
       position: relative;
     }
     .card__hero-header {
+      
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -78,6 +80,7 @@
     }
     /* Contenedor dinámico: alterna entre texto y SVG */
     .card__dynamic {
+      
       position: relative;
       width: 100%;
       min-height: 4em; /* Asegura espacio suficiente para el SVG completo */
@@ -96,6 +99,7 @@
       transition: opacity 0.6s ease, filter 0.6s ease;
     }
     .dynamic-text {
+      
       opacity: 1;
       filter: blur(0px);
       color: #2b2b2b;
@@ -103,6 +107,7 @@
       font-weight: 600;
     }
     .dynamic-svg {
+      
       opacity: 0;
       filter: blur(10px);
     }
