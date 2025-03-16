@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tarjetas con Transición iOS y SVG Dinámicos</title>
   <!-- Preload de SVGs para mejorar la carga -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil:opsz,wght@10..72,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&family=VT323&display=swap" rel="stylesheet">
   <link rel="preload" href="targetaslogos/1.svg" as="image">
   <link rel="preload" href="targetaslogos/2.svg" as="image">
   <style>
@@ -12,6 +15,7 @@
       --cards-bg: #e6e6dd; /* Fondo de la página */
     }
     body {
+      font-family: 'Roboto', sans-serif;
       background-color: var(--cards-bg);
       margin: 0;
       padding: 1rem;
